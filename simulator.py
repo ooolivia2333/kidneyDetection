@@ -13,7 +13,9 @@ def serve_mllp_client(client, source, messages):
     buffer = b""
     while i < len(messages):
         try:
-            mllp = MLLP_START_OF_BLOCK.to_bytes() + messages[i] + MLLP_END_OF_BLOCK.to_bytes() + MLLP_CARRIAGE_RETURN.to_bytes()
+            mllp = MLLP_START_OF_BLOCK.to_bytes(1, 'big') + messages[i] + MLLP_END_OF_BLOCK.to_bytes(1,
+                                                                                                     'big') + MLLP_CARRIAGE_RETURN.to_bytes(
+                1, 'big')
             client.send(mllp)
             received = []
             while len(received) < 1:
