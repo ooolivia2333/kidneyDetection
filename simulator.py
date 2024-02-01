@@ -7,16 +7,18 @@ import http.server
 
 VERSION = "0.0.0"
 MLLP_BUFFER_SIZE = 1024
+MLLP_TIMEOUT_SECONDS = 10
+SHUTDOWN_POLL_INTERVAL_SECONDS = 2
 
-def serve_mllp_client(client, source, messages):
+def serve_mllp_client(client, source, messages, shutdown_mllp):
     i = 0
     buffer = b""
-    while i < len(messages):
+    while i < len(messages) and not shutdown_mllp.is_set():
         try:
-            mllp = MLLP_START_OF_BLOCK.to_bytes(1, 'big') + messages[i] + MLLP_END_OF_BLOCK.to_bytes(1,
-                                                                                                     'big') + MLLP_CARRIAGE_RETURN.to_bytes(
-                1, 'big')
-            client.send(mllp)
+            mllp = bytes(chr(MLLP_START_OF_BLOCK), "ascii")
+            mllp += messages[i]
+            mllp += bytes(chr(MLLP_END_OF_BLOCK) + chr(MLLP_CARRIAGE_RETURN), "ascii")
+            client.sendall(mllp)
             received = []
             while len(received) < 1:
                 r = client.recv(MLLP_BUFFER_SIZE)
@@ -36,7 +38,10 @@ def serve_mllp_client(client, source, messages):
             print(f"mllp: {source}: closing connection: error")
             break
     else:
+        if i == len(messages):
             print(f"mllp: {source}: closing connection: end of messages")
+        else:
+            print(f"mllp: {source}: closing connection: mllp shutdown")
     client.close()
 
 HL7_MSA_ACK_CODE_FIELD = 1
@@ -56,21 +61,25 @@ def verify_ack(messages):
         return False, "Wrong number of fields in MSA segment"
     return fields[HL7_MSA_ACK_CODE_FIELD] == HL7_MSA_ACK_CODE_ACCEPT, None
 
-def run_mllp_server(host, port, hl7_messages):
+def run_mllp_server(host, port, hl7_messages, shutdown_mllp):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((host, port))
+        s.settimeout(SHUTDOWN_POLL_INTERVAL_SECONDS)
         s.listen(1)
         print(f"mllp: listening on {host}:{port}")
-        while True:
-            client, (host, port) = s.accept()
+        while not shutdown_mllp.is_set():
+            try:
+                client, (host, port) = s.accept()
+            except TimeoutError:
+                continue
             source = f"{host}:{port}"
             print(f"mllp: {source}: accepted connection")
             client.settimeout(MLLP_TIMEOUT_SECONDS)
-            t = threading.Thread(target=serve_mllp_client, args=(client, source, hl7_messages), daemon=True)
+            t = threading.Thread(target=serve_mllp_client, args=(client, source, hl7_messages, shutdown_mllp), daemon=True)
             t.start()
+        print("mllp: graceful shutdown")
 
-MLLP_TIMEOUT_SECONDS = 10
 MLLP_START_OF_BLOCK = 0x0b
 MLLP_END_OF_BLOCK = 0x1c
 MLLP_CARRIAGE_RETURN = 0x0d
@@ -107,6 +116,10 @@ def read_hl7_messages(filename):
 
 class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
 
+    def __init__(self, shutdown, *args, **kwargs):
+        self.shutdown = shutdown
+        super().__init__(*args, **kwargs)
+
     def do_POST(self):
         self.server_version = f"coursework3-simulator/{VERSION}"
         if self.path == "/page":
@@ -130,7 +143,18 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(http.HTTPStatus.OK)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
-            self.wfile.write(b"ok")
+            self.wfile.write(b"ok\n")
+        elif self.path == "/healthy":
+            self.send_response(http.HTTPStatus.OK)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"ok\n")
+        elif self.path == "/shutdown":
+            self.send_response(http.HTTPStatus.OK)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"ok\n")
+            self.shutdown()
         else:
             print("pager: bad request: not /page")
             self.send_response(http.HTTPStatus.BAD_REQUEST)
@@ -149,11 +173,20 @@ def main():
     parser.add_argument("--pager", default=8441, type=int, help="Post on which to listen for pager requests via HTTP")
     flags = parser.parse_args()
     hl7_messages = read_hl7_messages(flags.messages)
-    t = threading.Thread(target=run_mllp_server, args=("0.0.0.0", flags.mllp, hl7_messages), daemon=True)
+    shutdown_mllp = threading.Event()
+    t = threading.Thread(target=run_mllp_server, args=("0.0.0.0", flags.mllp, hl7_messages, shutdown_mllp), daemon=True)
     t.start()
-    pager = http.server.ThreadingHTTPServer(("0.0.0.0", flags.pager), PagerRequestHandler)
+    pager = None
+    def shutdown():
+        shutdown_mllp.set()
+        print("pager: graceful shutdown")
+        pager.shutdown()
+    def new_pager_handler(*args, **kwargs):
+        return PagerRequestHandler(shutdown, *args, **kwargs)
+    pager = http.server.ThreadingHTTPServer(("0.0.0.0", flags.pager), new_pager_handler)
     print(f"pager: listening on 0.0.0.0:{flags.pager}")
-    pager.serve_forever()
+    pager.serve_forever(poll_interval=SHUTDOWN_POLL_INTERVAL_SECONDS)
+    t.join()
 
 if __name__ == "__main__":
     main()
