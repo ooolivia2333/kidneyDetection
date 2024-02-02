@@ -38,7 +38,7 @@ def main():
 
                 # if detect aki
                 if prediction:
-                    send_pager_message(mrn, "some message")
+                    send_pager_message(mrn, 8441)
 
             ack_message()
 
