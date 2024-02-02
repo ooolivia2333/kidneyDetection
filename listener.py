@@ -1,4 +1,5 @@
 import socket
+from datetime import datetime
 # Olivia
 
 MLLP_START_BLOCK = b'\x0b'  # Start of block
@@ -10,38 +11,42 @@ def start_listener(port):
     global s  # Declare the socket as global to use it outside this function
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ('localhost', port)
-    s.bind(server_address)
-    s.listen(1)  # Listen for incoming connections
+    s.connect(server_address)
 
 def receive_message():
-    # Logic to listen and receive messages
     global s
-    connection, client_address = s.accept()  # Accept a connection
     try:
-        data = connection.recv(1024)
-        if data:
-            # Strip the MLLP start and end block characters
-            message = data.strip(MLLP_START_BLOCK + MLLP_END_BLOCK + MLLP_CARRIAGE_RETURN)
-            return message  # Return the stripped message
-    finally:
-        connection.close()
-
-def parse_hl7_message(message):
-    # TODO: implement HL7 message parsing
-    # return parsed_data, type
-    pass
+        data = s.recv(1024)  # Attempt to receive data from the socket
+        if data == b'':  # Check if the connection was closed
+            print("Connection closed by the server.")
+            s.close()  # Close the socket
+            return None
+        # print data for testing purposes, should be deleted later
+        print("Data received:", data)
+        return data  # And return the data
+    except Exception as e:
+        # If an error occurs, print the error, close the socket, and return None
+        print(f"An error occurred: {e}")
+        s.close()  # Ensure the socket is closed to avoid resource leakage
+        return None
 
 def ack_message():
     global s
-    # TODO: Implement the logic to send ACK for the given message_control_id
+    # Generate current timestamp in the format YYYYMMDDHHMMSS
+    current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Send acknowledgment back
     ack_message = (
-            MLLP_START_BLOCK
-            + b"MSH|^~\\&|Listener|System|Simulator|SimulatorSystem|"
-            + b"202301011230||ACK|MessageControlId|P|2.3\r"
-            + b"MSA|AA|OriginalMessageControlId\r"
-            + MLLP_END_BLOCK
-            + MLLP_CARRIAGE_RETURN
+            b'\x0b'  # MLLP start block
+            + f"MSH|^~\\&|||||{current_timestamp}||ACK|||2.5\r".encode()  # MSH segment with current timestamp and version 2.5
+            + "MSA|AA\r".encode()  # MSA segment with acknowledgment type AA
+            + b'\x1c'  # MLLP end block
+            + b'\x0d'  # MLLP carriage return
     )
+
     s.send(ack_message)
+
+def close_connection():
+    # to properly close the connection
+    global s
+    s.close()
