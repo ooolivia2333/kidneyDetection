@@ -1,4 +1,4 @@
-# TODO: Dockerfile cmds
+# Tony
 FROM ubuntu:jammy
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3
 COPY simulator.py /simulator/
