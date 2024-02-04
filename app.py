@@ -7,9 +7,9 @@ from pager_system import send_pager_message
 def main():
     #TODO: main application integration
     # preprocess all historical data
-    historical_data = load_and_process_history('path/to/history.csv')
+    historical_data = load_and_process_history('history.csv')
     # load pre-trained model
-    model = load_model('path/to/model')
+    model = load_model('aki_model.json')
 
     # start listener to port 8440
     start_listener(8440)
@@ -28,12 +28,13 @@ def main():
 
             # if ADT (Admission, Discharge, Transfer), need to update current data
             if type == "ADT":
-                historical_data = update_patient_data(mrn, parsed_data)
+                historical_data = update_patient_data(mrn, parsed_data, historical_data, type=type)
             # if ORU (Observation Result), extract all pass history, aggregate and make prediction
             else:
                 patient_history = get_patient_history(historical_data, mrn)
 
                 combined_data = aggregate_data(parsed_data, patient_history)
+                historical_data = update_patient_data(mrn, combined_data, historical_data, type=type)
                 prediction = predict_aki(model, combined_data)
 
                 # if detect aki
