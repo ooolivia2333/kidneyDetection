@@ -16,7 +16,7 @@ def send_pager_message(mrn, port):
 
         response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()
-        print(response.text)
+        #print(response.text)
         
     except requests.exceptions.RequestException as e:
         print(f"Error sending page: {e}")

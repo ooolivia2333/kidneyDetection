@@ -43,7 +43,8 @@ def parse_hl7_message(message):
                 extracted_info['name'] = pid_match.group(3)
                 extracted_info['date_of_birth'] = pid_match.group(4)
                 extracted_info['sex'] = pid_match.group(5)
-            else: print('')
+            else:
+                pass
 
         elif message_type == 'ADT^A03':
             type = 'ADT'
@@ -93,9 +94,9 @@ if __name__ == '__main__':
     oru_message =   b'\x0bMSH|^~\&|SIMULATION|SOUTH RIVERSIDE|||20240617120600||ORU^R01|||2.5\rPID|1||837440\rOBR|1||||||20240617120600\rOBX|1|SN|CREATININE||100.46338429249316\r\x1c\r'
 
     message, _ = parse_hl7_message(adt01_message)
-    print(message)
+    # print(message)
 
     mrn = extract_mrn(message)
-    print(mrn)
+    # print(mrn)
 
 

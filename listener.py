@@ -22,7 +22,6 @@ def receive_message():
             s.close()  # Close the socket
             return None
         # print data for testing purposes, should be deleted later
-        print("Data received:", data)
         return data  # And return the data
     except Exception as e:
         # If an error occurs, print the error, close the socket, and return None
