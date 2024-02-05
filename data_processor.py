@@ -47,8 +47,8 @@ def load_and_process_history(file_path):
 
     # convert None to np.nan
     processed_df = processed_df.fillna(np.nan)
-    print("top 10 rows of processed dataframe:")
-    print(processed_df.head())
+    # print("top 10 rows of processed dataframe:")
+    # print(processed_df.head())
 
     return processed_df
 
@@ -99,12 +99,10 @@ def update_patient_data(mrn, parsed_data, historical_data, type):
 
         # Check if combined_data has more columns than historical_data
         num_extra_columns = (combined_data.shape[1] + 1) - historical_data.shape[1]
-        print(f'num_extra_columns: {num_extra_columns}')
         if num_extra_columns > 0:
             # Assuming that additional columns are always in pairs of 'creatinine_date_i' and 'creatinine_result_i'
             # Calculate the next index for the new columns based on existing column count
             next_index = (historical_data.shape[1] - 3) // 2
-            print(f'next_index: {next_index}')
             new_date_col_name = f'creatinine_date_{next_index}'
             new_result_col_name = f'creatinine_result_{next_index}'
             # Add the new pair of columns with default values (e.g., None or np.nan)
