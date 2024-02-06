@@ -1,11 +1,23 @@
 # Tony
 FROM ubuntu:jammy
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3
-COPY simulator.py /simulator/
-COPY simulator_test.py /simulator/
-WORKDIR /simulator
-RUN ./simulator_test.py
-COPY messages.mllp /data/
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3-pip
+
+COPY requirements.txt /model/
+RUN pip3 install -r /model/requirements.txt
+
+
+COPY aki_detector.py /model/
+COPY aki_model.json /model/
+COPY aki.csv /model/
+COPY app.py /model/
+COPY data_processor.py /model/
+COPY history.csv /model/
+COPY hl7_processor.py /model/
+COPY listener.py /model/
+COPY pager_system.py /model/
+
+RUN chmod +x /model/app.py
 EXPOSE 8440
 EXPOSE 8441
-CMD /simulator/simulator.py --messages=/data/messages.mllp
+
+CMD ["/model/app.py", "-p", "8440", "-s", "8441"]
