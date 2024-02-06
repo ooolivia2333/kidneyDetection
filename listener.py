@@ -10,7 +10,10 @@ def start_listener(port):
     # Set up socket connection to listen for HL7 messages
     global s  # Declare the socket as global to use it outside this function
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('localhost', port)
+    # for local
+    server_address = ('0.0.0.0', port)
+    # for docker
+    server_address = ('host.docker.internal', port)
     s.connect(server_address)
 
 def receive_message():

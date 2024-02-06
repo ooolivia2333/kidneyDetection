@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import warnings
 from listener import start_listener, receive_message, ack_message, close_connection
 from hl7_processor import parse_hl7_message, extract_mrn
 from data_processor import load_and_process_history, get_patient_history, update_patient_data
@@ -5,11 +7,14 @@ from aki_detector import load_model, aggregate_data, predict_aki
 from pager_system import send_pager_message
 
 def main():
+    warnings.filterwarnings("ignore", category=FutureWarning)
     #TODO: main application integration
     # preprocess all historical data
-    historical_data = load_and_process_history('history.csv')
+    # historical_data = load_and_process_history('history.csv')
+    historical_data = load_and_process_history('/model/history.csv')
     # load pre-trained model
-    model = load_model('aki_model.json')
+    # model = load_model('aki_model.json')
+    model = load_model('/model/aki_model.json')
 
     # start listener to port 8440
     start_listener(8440)

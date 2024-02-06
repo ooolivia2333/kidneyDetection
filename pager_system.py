@@ -10,7 +10,11 @@ def send_pager_message(mrn, port):
         port: int
     '''
     try:
-        url = 'http://0.0.0.0:'+str(port)+'/page'
+        # for local
+        # url = 'http://0.0.0.0:'+str(port)+'/page'
+        # for docker
+        url = 'http://host.docker.internal:'+str(port)+'/page'
+
         headers = {'Content-type': 'text/plain'}
         data = str(mrn)
 
