@@ -6,15 +6,14 @@ MLLP_START_BLOCK = b'\x0b'  # Start of block
 MLLP_END_BLOCK = b'\x1c'    # End of block
 MLLP_CARRIAGE_RETURN = b'\x0d'  # Carriage return
 
-def start_listener(port):
+def start_listener(url):
+    host_name, port = url.split(':')
     # Set up socket connection to listen for HL7 messages
     global s  # Declare the socket as global to use it outside this function
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # for local
-    server_address = ('0.0.0.0', port)
-    # for docker
-    server_address = ('host.docker.internal', port)
+    server_address = (host_name, int(port))
     s.connect(server_address)
+    print(f'Connected to {host_name}:{port}')
 
 def receive_message():
     global s

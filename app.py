@@ -5,10 +5,28 @@ from hl7_processor import parse_hl7_message, extract_mrn
 from data_processor import load_and_process_history, get_patient_history, update_patient_data
 from aki_detector import load_model, aggregate_data, predict_aki
 from pager_system import send_pager_message
+import argparse
 
 def main():
     warnings.filterwarnings("ignore", category=FutureWarning)
-    #TODO: main application integration
+    parser = argparse.ArgumentParser(description='Description of your program')
+    parser.add_argument('--mllp', type=str, help='Port for MLLP connection')
+    parser.add_argument('--pager', type=str, help='Port for pager connection')
+    args = parser.parse_args()
+
+    # url parsing, put into a util function later
+    mllp = args.mllp
+    if mllp.startswith('http://'):
+        mllp = mllp[7:]
+    if mllp.startswith('https://'):
+        mllp = mllp[8:]
+
+    pager = args.pager
+    if pager.startswith('http://'):
+        pager = pager[7:]
+    if mllp.startswith('https://'):
+        pager = pager[8:]
+
     # preprocess all historical data
     # historical_data = load_and_process_history('history.csv')
     historical_data = load_and_process_history('/model/history.csv')
@@ -17,7 +35,7 @@ def main():
     model = load_model('/model/aki_model.json')
 
     # start listener to port 8440
-    start_listener(8440)
+    start_listener(mllp)
 
     try:
         while True:
@@ -44,7 +62,7 @@ def main():
 
                 # if detect aki
                 if prediction:
-                    send_pager_message(mrn, 8441)
+                    send_pager_message(mrn, pager)
 
             ack_message()
 
