@@ -2,7 +2,7 @@
 import socket
 import requests
 
-def send_pager_message(mrn, port):
+def send_pager_message(mrn, url):
     '''
     send a pager message
     input:
@@ -10,11 +10,8 @@ def send_pager_message(mrn, port):
         port: int
     '''
     try:
-        # for local
-        # url = 'http://0.0.0.0:'+str(port)+'/page'
-        # for docker
-        url = 'http://host.docker.internal:'+str(port)+'/page'
 
+        url = 'http://' + url + '/page'
         headers = {'Content-type': 'text/plain'}
         data = str(mrn)
 

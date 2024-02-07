@@ -20,4 +20,4 @@ RUN chmod +x /model/app.py
 EXPOSE 8440
 EXPOSE 8441
 
-CMD ["/model/app.py", "-p", "8440", "-s", "8441"]
+CMD /model/app.py --mllp=$MLLP_ADDRESS --pager=$PAGER_ADDRESS
