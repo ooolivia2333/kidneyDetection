@@ -1,6 +1,5 @@
 import socket
 from datetime import datetime
-# Olivia
 
 MLLP_START_BLOCK = b'\x0b'  # Start of block
 MLLP_END_BLOCK = b'\x1c'    # End of block

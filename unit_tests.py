@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-# Iqbal (evaluation too)
 import unittest
-import warnings
-
-from data_processor import get_patient_history, update_patient_data, load_and_process_history
 from hl7_processor import parse_hl7_message, extract_mrn
 from listener import receive_message, close_connection, ack_message, start_listener
-from aki_detector import load_model, predict_aki, aggregate_data
 from pager_system import send_pager_message
-from datetime import datetime
 
 """
     To run the unit tests, simply run the following command in the CLI:

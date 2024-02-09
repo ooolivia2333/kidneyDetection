@@ -1,4 +1,3 @@
-# tony
 import re
 
 def parse_hl7_message(message):
@@ -85,18 +84,5 @@ def extract_mrn(message):
         mrn: STRING
     '''
     return message['pid']
-
-
-if __name__ == '__main__':
-
-    adt01_message = b'\x0bMSH|^~\\&|SIMULATION|SOUTH RIVERSIDE|||20240102135300||ADT^A01|||2.5\rPID|1||497030||ROSCOE DOHERTY||19870515|M\r\x1c\r'
-    adt03_message = b'\x0bMSH|^~\&|SIMULATION|SOUTH RIVERSIDE|||20240607141100||ADT^A03|||2.5\rPID|1||411749\r\x1c\r'
-    oru_message =   b'\x0bMSH|^~\&|SIMULATION|SOUTH RIVERSIDE|||20240617120600||ORU^R01|||2.5\rPID|1||837440\rOBR|1||||||20240617120600\rOBX|1|SN|CREATININE||100.46338429249316\r\x1c\r'
-
-    message, _ = parse_hl7_message(adt01_message)
-    # print(message)
-
-    mrn = extract_mrn(message)
-    # print(mrn)
 
 

@@ -9,5 +9,3 @@ start docker
 
 set docker environment variables for running
 * docker run -e MLLP_ADDRESS=host.docker.internal:8440 -e PAGER_ADDRESS=host.docker.internal:8441 cw3
-
-test: 1155
