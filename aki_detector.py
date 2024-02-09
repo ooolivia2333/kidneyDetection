@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from pandas import to_datetime
 
-
 def load_model(model_path):
     '''
     Description:
@@ -114,6 +113,9 @@ def predict_aki(model, combined_data):
         creatinine_date_col = f'creatinine_date_{i}'
         test_data[creatinine_result_col] = pd.to_numeric(test_data[creatinine_result_col], errors='coerce')
         test_data[creatinine_date_col] = pd.to_datetime(test_data[creatinine_date_col], errors='coerce')
+
+    last_test_date_column = 'creatinine_date_0'  # Adjust based on your actual data structure
+    prediction_date = test_data[last_test_date_column].iloc[-1]  # Get the last (most recent) test date
     
     # Calculate the time differences and set 'creatinine_date_0' to 0
     for i in range(4, 0, -1):  # Start from the last date and go backwards
@@ -128,9 +130,9 @@ def predict_aki(model, combined_data):
 
     # Map age to numeric
     test_data['age'] = pd.to_numeric(test_data['age'], errors='coerce')
-    
+
     # Make the prediction using the model
     prediction = model.predict(test_data)
         
-    return prediction
+    return prediction, prediction_date
 

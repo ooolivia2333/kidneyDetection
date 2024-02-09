@@ -15,6 +15,7 @@ COPY history.csv /model/
 COPY hl7_processor.py /model/
 COPY listener.py /model/
 COPY pager_system.py /model/
+COPY f3_evaluation.py /model/
 
 RUN chmod +x /model/app.py
 EXPOSE 8440

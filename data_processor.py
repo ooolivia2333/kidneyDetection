@@ -3,7 +3,6 @@ import csv
 import numpy as np
 from datetime import datetime
 
-
 def load_and_process_history(file_path):
     '''
     Description:

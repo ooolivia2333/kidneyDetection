@@ -5,9 +5,19 @@ from hl7_processor import parse_hl7_message, extract_mrn
 from data_processor import load_and_process_history, get_patient_history, update_patient_data
 from aki_detector import load_model, aggregate_data, predict_aki
 from pager_system import send_pager_message
+from f3_evaluation import check_aki_detection_accuracy
 import argparse
+import pandas as pd
+
+def parse_url(url):
+    if url.startswith('http://'):
+        url = url[7:]
+    if url.startswith('https://'):
+        url = url[8:]
+    return url
 
 def main():
+    # parameter parsing
     warnings.filterwarnings("ignore", category=FutureWarning)
     parser = argparse.ArgumentParser(description='Description of your program')
     parser.add_argument('--mllp', type=str, help='Port for MLLP connection')
@@ -16,25 +26,27 @@ def main():
 
     # url parsing, put into a util function later
     mllp = args.mllp
-    if mllp.startswith('http://'):
-        mllp = mllp[7:]
-    if mllp.startswith('https://'):
-        mllp = mllp[8:]
+    mllp = parse_url(mllp)
 
     pager = args.pager
-    if pager.startswith('http://'):
-        pager = pager[7:]
-    if mllp.startswith('https://'):
-        pager = pager[8:]
+    pager = parse_url(pager)
 
     # preprocess all historical data
-    # historical_data = load_and_process_history('history.csv')
     historical_data = load_and_process_history('/model/history.csv')
     # load pre-trained model
-    # model = load_model('aki_model.json')
     model = load_model('/model/aki_model.json')
+    # expected outcomes
+    aki_expected_outcomes = pd.read_csv('/model/aki.csv')
 
-    # start listener to port 8440
+    # local paths for local testing
+    # historical_data = load_and_process_history('history.csv')
+    # model = load_model('aki_model.json')
+    # aki_expected_outcomes = pd.read_csv('aki.csv')
+
+    # Initialize a list to record predictions
+    recorded_predictions = []
+
+    # start listener for mllp messages
     start_listener(mllp)
 
     try:
@@ -58,15 +70,22 @@ def main():
 
                 combined_data = aggregate_data(parsed_data, patient_history)
                 historical_data = update_patient_data(mrn, combined_data, historical_data, type=type)
-                prediction = predict_aki(model, combined_data)
+                prediction, prediction_date = predict_aki(model, combined_data)
 
                 # if detect aki
                 if prediction:
                     send_pager_message(mrn, pager)
+                    recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
             ack_message()
 
     finally:
+        # metrics calculation for local
+        # recorded_predictions_df = pd.DataFrame(recorded_predictions)
+        # recorded_predictions_df.to_csv('recorded_predictions.csv', index=False)
+        # accuracy_report = check_aki_detection_accuracy(recorded_predictions_df, aki_expected_outcomes)
+        # print("AKI Detection Accuracy Report:", accuracy_report)
+
         print("Cleaning up resources...")
         close_connection()
 

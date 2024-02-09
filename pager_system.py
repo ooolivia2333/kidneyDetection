@@ -1,5 +1,3 @@
-# Tony
-import socket
 import requests
 
 def send_pager_message(mrn, url):
@@ -21,7 +19,3 @@ def send_pager_message(mrn, url):
         
     except requests.exceptions.RequestException as e:
         print(f"Error sending page: {e}")
-
-
-if __name__ == '__main__':
-    send_pager_message('47823', 8441)
