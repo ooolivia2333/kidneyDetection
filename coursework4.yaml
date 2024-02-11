@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aki-detection-state
+  namespace: trinity
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: managed-csi
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aki-detection
+  namespace: trinity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aki-detection
+  template:
+    metadata:
+      labels:
+        app: aki-detection
+    spec:
+      containers:
+      - name: aki-detection
+        image: imperialswemlsspring2024.azurecr.io/coursework4-trinity
+        command: ["/model/app.py"]
+        args:
+        - "--history=/hospital-history/history.csv"
+        env:
+        - name: MLLP_ADDRESS
+          value: trinity-simulator.hospital:8440
+        - name: PAGER_ADDRESS
+          value: trinity-simulator.hospital:8441
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+          - mountPath: "/hospital-history"
+            name: hospital-history
+            readOnly: true
+        resources:
+          limits:
+            memory: "200Mi"
+            cpu: "500m"  # Reduced CPU limit
+          requests:
+            memory: "100Mi"
+            cpu: "100m"  # Reduced CPU request
+      initContainers:
+      - name: copy-hospital-history
+        image: imperialswemlsspring2024.azurecr.io/coursework4-history
+        volumeMounts:
+          - mountPath: "/hospital-history"
+            name: hospital-history
+          - mountPath: "/state"
+            name: aki-detection-state
+        resources:
+          limits:
+            memory: "200Mi"
+            cpu: "500m"  # Reduced CPU limit
+          requests:
+            memory: "100Mi"
+            cpu: "100m"  # Reduced CPU request
+      volumes:
+      - name: hospital-history
+        emptyDir:
+          sizeLimit: 50Mi
+      - name: aki-detection-state
+        persistentVolumeClaim:
+          claimName: aki-detection-state
