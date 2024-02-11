@@ -8,6 +8,7 @@ from pager_system import send_pager_message
 from f3_evaluation import check_aki_detection_accuracy
 import argparse
 import pandas as pd
+import os
 
 def parse_url(url):
     if url.startswith('http://'):
@@ -20,19 +21,18 @@ def main():
     # parameter parsing
     warnings.filterwarnings("ignore", category=FutureWarning)
     parser = argparse.ArgumentParser(description='Description of your program')
-    parser.add_argument('--mllp', type=str, help='Port for MLLP connection')
-    parser.add_argument('--pager', type=str, help='Port for pager connection')
+    parser.add_argument('--history', type=str, help='path for history')
     args = parser.parse_args()
 
-    # url parsing, put into a util function later
-    mllp = args.mllp
+    # Read environment variables
+    mllp = os.getenv('MLLP_ADDRESS')
     mllp = parse_url(mllp)
 
-    pager = args.pager
+    pager = os.getenv('PAGER_ADDRESS')
     pager = parse_url(pager)
 
     # preprocess all historical data
-    historical_data = load_and_process_history('/model/history.csv')
+    historical_data = load_and_process_history(args.history)
     # load pre-trained model
     model = load_model('/model/aki_model.json')
     # expected outcomes
@@ -74,6 +74,7 @@ def main():
 
                 # if detect aki
                 if prediction:
+                    print("page for mrn: " + str(mrn))
                     send_pager_message(mrn, pager)
                     recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
