@@ -22,26 +22,33 @@ def main():
     warnings.filterwarnings("ignore", category=FutureWarning)
     parser = argparse.ArgumentParser(description='Description of your program')
     parser.add_argument('--history', type=str, help='path for history')
+    parser.add_argument('--local', default=False, help='Show metrics if Local')
+    parser.add_argument('--mllp', type=str, help='mllp address for local')
+    parser.add_argument('--pager', type=str, help='pager address for local')
     args = parser.parse_args()
 
-    # Read environment variables
-    mllp = os.getenv('MLLP_ADDRESS')
-    mllp = parse_url(mllp)
+    # get address for mllp and pager
+    if args.local:
+        mllp = args.mllp
+        mllp = parse_url(mllp)
+        pager = args.pager
+        pager = parse_url(pager)
+    else:
+        mllp = os.getenv('MLLP_ADDRESS')
+        mllp = parse_url(mllp)
+        pager = os.getenv('PAGER_ADDRESS')
+        pager = parse_url(pager)
 
-    pager = os.getenv('PAGER_ADDRESS')
-    pager = parse_url(pager)
+    # local paths for local testing
+    if args.local:
+        historical_data = load_and_process_history('/model/history.csv')
+    else:
+        historical_data = load_and_process_history(args.history)
 
-    # preprocess all historical data
-    historical_data = load_and_process_history(args.history)
     # load pre-trained model
     model = load_model('/model/aki_model.json')
     # expected outcomes
     aki_expected_outcomes = pd.read_csv('/model/aki.csv')
-
-    # local paths for local testing
-    # historical_data = load_and_process_history('history.csv')
-    # model = load_model('aki_model.json')
-    # aki_expected_outcomes = pd.read_csv('aki.csv')
 
     # Initialize a list to record predictions
     recorded_predictions = []
@@ -81,11 +88,12 @@ def main():
             ack_message()
 
     finally:
-        # metrics calculation for local
-        # recorded_predictions_df = pd.DataFrame(recorded_predictions)
-        # recorded_predictions_df.to_csv('recorded_predictions.csv', index=False)
-        # accuracy_report = check_aki_detection_accuracy(recorded_predictions_df, aki_expected_outcomes)
-        # print("AKI Detection Accuracy Report:", accuracy_report)
+        if args.local:
+            # metrics calculation for local
+            recorded_predictions_df = pd.DataFrame(recorded_predictions)
+            recorded_predictions_df.to_csv('recorded_predictions.csv', index=False)
+            accuracy_report = check_aki_detection_accuracy(recorded_predictions_df, aki_expected_outcomes)
+            print("AKI Detection Accuracy Report:", accuracy_report)
 
         print("Cleaning up resources...")
         close_connection()
