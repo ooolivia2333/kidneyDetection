@@ -12,7 +12,6 @@ def load_model(model_path):
     output:
         model: XGBoost model
     '''
-    # Load the pre-trained model
     model = xgb.XGBClassifier()
     model.load_model(model_path)
     return model
