@@ -12,3 +12,10 @@ set docker environment variables for running
 
 if run locally
 * dockerfile: --local=True
+
+## Kubernetes
+* docker build --platform=linux/x86-64 -t imperialswemlsspring2024.azurecr.io/coursework4-trinity .
+* docker push imperialswemlsspring2024.azurecr.io/coursework4-trinity
+* kubectl delete deployment aki-detection -n trinity
+* kubectl apply -f coursework4.yaml
+
