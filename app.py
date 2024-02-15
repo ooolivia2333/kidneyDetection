@@ -9,6 +9,30 @@ from f3_evaluation import check_aki_detection_accuracy
 import argparse
 import pandas as pd
 import os
+import signal
+import sys
+
+historical_data = None
+
+def saving_csv_for_shutdown(signum, frame):
+    global historical_data
+    print("Received SIGTERM. saving data to csv file")
+    if not os.path.exists('/state'):
+        os.makedirs('/state')
+    historical_data.to_csv('/state/historical_data.csv', index=False)
+    close_connection()
+    sys.exit(0)
+
+def reload_csv_from_shutdown():
+    global historical_data
+    file_path = '/state/historical_data.csv'
+    if os.path.exists(file_path):
+        print('load data from saved csv file')
+        historical_data = pd.read_csv(file_path)
+        return True
+    else:
+        return False
+
 
 def parse_url(url):
     if url.startswith('http://'):
@@ -18,13 +42,15 @@ def parse_url(url):
     return url
 
 def main():
+    global historical_data
+
     # parameter parsing
     warnings.filterwarnings("ignore", category=FutureWarning)
     parser = argparse.ArgumentParser(description='Description of your program')
     parser.add_argument('--history', type=str, help='path for history')
     parser.add_argument('--local', default=False, help='Show metrics if Local')
-    parser.add_argument('--mllp', type=str, help='mllp address for local')
-    parser.add_argument('--pager', type=str, help='pager address for local')
+    parser.add_argument('--mllp', type=str, default='host.docker.internal:8440', help='mllp address for local')
+    parser.add_argument('--pager', type=str, default='host.docker.internal:8441', help='pager address for local')
     args = parser.parse_args()
 
     # get address for mllp and pager
@@ -40,10 +66,12 @@ def main():
         pager = parse_url(pager)
 
     # local paths for local testing
-    if args.local:
-        historical_data = load_and_process_history('/model/history.csv')
-    else:
-        historical_data = load_and_process_history(args.history)
+    if not reload_csv_from_shutdown():
+        print("not loading from state")
+        if args.local:
+            historical_data = load_and_process_history('/model/history.csv')
+        else:
+            historical_data = load_and_process_history(args.history)
 
     # load pre-trained model
     model = load_model('/model/aki_model.json')
@@ -57,6 +85,9 @@ def main():
     start_listener(mllp)
 
     try:
+        # Register the SIGTERM signal handler
+        signal.signal(signal.SIGTERM, saving_csv_for_shutdown)
+
         while True:
             message = receive_message()
             if message is None:
