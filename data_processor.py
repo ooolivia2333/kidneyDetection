@@ -116,7 +116,10 @@ def get_patient_history(historical_data, mrn):
         test_results: pd DataFrame with the following columns:
         [age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_26, creatinine_result_26]
     '''
-    # get the patient's data
+    # get the patient's data, add the new patient to the historical data if it does not exist
+    if mrn not in historical_data['mrn'].values:
+        new_patient = [mrn] + [np.nan] * (len(historical_data.columns) - 1)
+        historical_data.loc[len(historical_data)] = new_patient
     patient_data = historical_data[historical_data['mrn'] == mrn]
     test_results = patient_data.iloc[:, 1:]
     return test_results
