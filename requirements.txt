@@ -5,3 +5,4 @@ tqdm
 xgboost
 requests
 pd
+prometheus_client

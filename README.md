@@ -19,3 +19,9 @@ if run locally
 * kubectl delete deployment aki-detection -n trinity
 * kubectl apply -f coursework4.yaml
 
+To check port
+* kubectl get pods -n trinity
+
+To forward prometheus to local port (then access via http://localhost:8000)
+* kubectl -n trinity port-forward {port_name} 8000:8000
+
