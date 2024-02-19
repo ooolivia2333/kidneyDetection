@@ -11,8 +11,13 @@ import pandas as pd
 import os
 import signal
 import sys
+from prometheus_client import start_http_server, Counter
 
 historical_data = None
+
+# metrics
+MESSAGES_RECEIVED = Counter('messages_received_total', 'Total HTTP Requests (count)')
+PAGES_SENT = Counter('pages_sent_total', 'Total Pages Sent (count)')
 
 def saving_csv_for_shutdown(signum, frame):
     global historical_data
@@ -43,7 +48,6 @@ def parse_url(url):
 
 def main():
     global historical_data
-
     # parameter parsing
     warnings.filterwarnings("ignore", category=FutureWarning)
     parser = argparse.ArgumentParser(description='Description of your program')
@@ -64,6 +68,10 @@ def main():
         mllp = parse_url(mllp)
         pager = os.getenv('PAGER_ADDRESS')
         pager = parse_url(pager)
+
+    # Start up the server to expose the metrics.
+    start_http_server(8000)
+    print("Prometheus metrics server running on port 8000")
 
     # local paths for local testing
     if not reload_csv_from_shutdown():
@@ -93,6 +101,7 @@ def main():
             if message is None:
                 print("No message received or connection closed, exiting loop.")
                 break  # Exit the loop if no message is received or connection is closed
+            MESSAGES_RECEIVED.inc()
 
             # Process the message
             parsed_data, type = parse_hl7_message(message)
@@ -114,6 +123,7 @@ def main():
                 if prediction:
                     print("page for mrn: " + str(mrn))
                     send_pager_message(mrn, pager)
+                    PAGES_SENT.inc()
                     recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
             ack_message()
