@@ -1,7 +1,11 @@
 import xgboost as xgb
 import pandas as pd
 import numpy as np
+import time
 from pandas import to_datetime
+from datetime import datetime
+from hl7_processor import parse_hl7_message, extract_mrn
+from data_processor import load_and_process_history, get_patient_history, update_patient_data
 
 def load_model(model_path):
     '''
@@ -53,16 +57,26 @@ def aggregate_data(new_data, patient_history):
     combined_data = patient_history
     return combined_data
 
-def predict_aki(model, combined_data):
+def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     '''
     Description:    
         Predict acute kidney injury (AKI) using an XGBoost model based on the provided patient data.
     input:
         model: XGBoost model
         combined_data: pd DataFrame
+        prediction_rate_dic: DIC
+        last_hour_test_data: pd DataFrame
     output:
         prediction: np array
+        prediction_date: datetime
+        prediction_latency: FLOAT
+        prediction_rate_dic: DIC
+        last_hour_test_data: pd DataFrame
+        mean_last_hour_test_data: pd DataFrame
     '''
+    # Start the timer
+    start_time = time.time()
+
     # Find the first NaN index
     first_nan_index = combined_data.iloc[0, 2:].isna().argmax() + 2 
     if first_nan_index == 2:
@@ -132,6 +146,25 @@ def predict_aki(model, combined_data):
 
     # Make the prediction using the model
     prediction = model.predict(test_data)
-        
-    return prediction, prediction_date
 
+    # End the timer
+    end_time = time.time()
+
+    # calculate the median of the test_data_pd in last an hour
+    current_time = datetime.now()
+    new_test_data = test_data.iloc[0].values.tolist() + [current_time]
+    last_hour_test_data.loc[len(last_hour_test_data)] = new_test_data
+    last_hour_test_data = last_hour_test_data[last_hour_test_data['prediction_time'] > (current_time - pd.Timedelta(hours=1))]
+    mean_last_hour_test_data = last_hour_test_data.iloc[:, :12].mean()
+    
+    # Calculate the latency
+    prediction_latency = end_time - start_time
+
+    # Update the prediction rate
+    if prediction[0] == 1:
+        prediction_rate_dic["positive"] += 1
+    else:
+        prediction_rate_dic["negative"] += 1
+    prediction_rate_dic["rate"] = prediction_rate_dic["positive"] / (prediction_rate_dic["positive"] + prediction_rate_dic["negative"])
+        
+    return prediction, prediction_date, prediction_latency, prediction_rate_dic, last_hour_test_data, mean_last_hour_test_data
