@@ -11,13 +11,19 @@ import pandas as pd
 import os
 import signal
 import sys
-from prometheus_client import start_http_server, Counter
+import time
+from prometheus_client import start_http_server, Counter, Summary, Gauge
 
 historical_data = None
 
 # metrics
 MESSAGES_RECEIVED = Counter('messages_received_total', 'Total HTTP Requests (count)')
 PAGES_SENT = Counter('pages_sent_total', 'Total Pages Sent (count)')
+PREDICTION_LATENCY = Gauge('prediction_latency', 'Prediction latency')
+OVERALL_LATENCY = Gauge('overall_latency', 'Overall latency')
+PREDICTION_RATE = Gauge('prediction_rate', 'Prediction rate')
+MEAN_INPUT = Gauge('mean_input', 'Mean input', ['column'])  
+
 
 def saving_csv_for_shutdown(signum, frame):
     global historical_data
@@ -89,6 +95,21 @@ def main():
     # Initialize a list to record predictions
     recorded_predictions = []
 
+    # Initialize the prediction rate
+    prediction_rate_dic = {"positive": 0, "negative": 0, "rate": 0.0}
+
+    # Initialize the last hour test data
+    new_column_order = [
+        'age', 'sex', 
+        'creatinine_result_0', 'creatinine_date_0', 
+        'creatinine_result_1', 'creatinine_date_1', 
+        'creatinine_result_2', 'creatinine_date_2',
+        'creatinine_result_3', 'creatinine_date_3',
+        'creatinine_result_4', 'creatinine_date_4',
+        'prediction_time'
+    ]
+    last_hour_test_data = pd.DataFrame(columns = new_column_order)
+
     # start listener for mllp messages
     start_listener(mllp)
 
@@ -98,6 +119,10 @@ def main():
 
         while True:
             message = receive_message()
+
+            # Start the timer
+            start_time = time.time()
+
             if message is None:
                 print("No message received or connection closed, exiting loop.")
                 break  # Exit the loop if no message is received or connection is closed
@@ -117,8 +142,14 @@ def main():
 
                 combined_data = aggregate_data(parsed_data, patient_history)
                 historical_data = update_patient_data(mrn, combined_data, historical_data, type=type)
-                prediction, prediction_date = predict_aki(model, combined_data)
+                prediction, prediction_date, prediction_latency, prediction_rate_dic, last_hour_test_data, mean_last_hour_test_data = predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data)
+                prediction_rate = prediction_rate_dic["rate"]
 
+                for column in mean_last_hour_test_data.index:
+                    MEAN_INPUT.labels(column).set(mean_last_hour_test_data[column])
+                PREDICTION_RATE.set(prediction_rate)
+                PREDICTION_LATENCY.set(prediction_latency)
+    
                 # if detect aki
                 if prediction:
                     print("page for mrn: " + str(mrn))
@@ -127,6 +158,13 @@ def main():
                     recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
             ack_message()
+
+            # End the timer
+            end_time = time.time()
+    
+            # Calculate the latency
+            overall_latency = end_time - start_time
+            OVERALL_LATENCY.set(overall_latency)
 
     finally:
         if args.local:
