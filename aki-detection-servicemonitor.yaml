@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aki-detection-monitor
+  namespace: trinity
+spec:
+  selector:
+    matchLabels:
+      app: aki-detection
+  endpoints:
+  - port: "8000"
+    interval: 30s

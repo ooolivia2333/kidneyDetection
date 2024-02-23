@@ -16,9 +16,11 @@ COPY hl7_processor.py /model/
 COPY listener.py /model/
 COPY pager_system.py /model/
 COPY f3_evaluation.py /model/
+COPY metrics.py /model/
 
 RUN chmod +x /model/app.py
 EXPOSE 8440
 EXPOSE 8441
+EXPOSE 8000
 
 CMD /model/app.py --mllp=$MLLP_ADDRESS --pager=$PAGER_ADDRESS --local=False

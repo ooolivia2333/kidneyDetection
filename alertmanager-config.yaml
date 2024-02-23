@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: trinity
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      smtp_require_tls: true
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'default-receiver'
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'om323@ic.ac.uk'
+        from: 'maskey0821@gmail.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'maskey0821@gmail.com'
+        auth_identity: 'maskey0821@gmail.com'
+        auth_password: 'jtnxnxyftkpevise'
+      - to: 'Iqbalkarimsiddiqui2015@gmail.com'
+        from: 'maskey0821@gmail.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'maskey0821@gmail.com'
+        auth_identity: 'maskey0821@gmail.com'
+        auth_password: 'jtnxnxyftkpevise'
+      - to: 'wm223@ic.ac.uk'
+        from: 'maskey0821@gmail.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'maskey0821@gmail.com'
+        auth_identity: 'maskey0821@gmail.com'
+        auth_password: 'jtnxnxyftkpevise'
