@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: trinity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.21.0  # Use the latest compatible version
+        args:
+          - "--config.file=/etc/alertmanager/alertmanager.yml"
+          - "--storage.path=/alertmanager"
+        ports:
+        - name: web
+          containerPort: 9093
+        resources: # Define the resource requests and limits
+          requests:
+            cpu: "100m"  # Minimum resources required
+            memory: "100Mi"
+          limits:
+            cpu: "500m"  # Maximum resources allowed
+            memory: "500Mi"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/alertmanager
+      volumes:
+      - name: config-volume
+        configMap:
+          name: alertmanager-config

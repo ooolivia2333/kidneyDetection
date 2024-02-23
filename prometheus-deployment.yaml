@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: trinity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.26.0  # Make sure the image tag is valid
+        ports:
+        - containerPort: 9090
+        resources: # Define the resource requests and limits
+          requests:
+            cpu: "100m"  # Minimum resources required
+            memory: "100Mi"
+          limits:
+            cpu: "500m"  # Maximum resources allowed
+            memory: "500Mi"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml  # Mount only the config file, not the whole directory
+        - name: prometheus-alert-rules
+          mountPath: /etc/prometheus/rules
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config  # Ensure this ConfigMap exists with the correct data
+      - name: prometheus-alert-rules
+        configMap:
+          name: prometheus-alert-rules
+      - name: prometheus-storage
+        emptyDir: { }

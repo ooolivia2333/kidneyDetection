@@ -12,18 +12,10 @@ import os
 import signal
 import sys
 import time
-from prometheus_client import start_http_server, Counter, Summary, Gauge
+from prometheus_client import start_http_server
+import metrics
 
 historical_data = None
-
-# metrics
-MESSAGES_RECEIVED = Counter('messages_received_total', 'Total HTTP Requests (count)')
-PAGES_SENT = Counter('pages_sent_total', 'Total Pages Sent (count)')
-PREDICTION_LATENCY = Gauge('prediction_latency', 'Prediction latency')
-OVERALL_LATENCY = Gauge('overall_latency', 'Overall latency')
-PREDICTION_RATE = Gauge('prediction_rate', 'Prediction rate')
-MEAN_INPUT = Gauge('mean_input', 'Mean input', ['column'])  
-
 
 def saving_csv_for_shutdown(signum, frame):
     global historical_data
@@ -126,10 +118,14 @@ def main():
             if message is None:
                 print("No message received or connection closed, exiting loop.")
                 break  # Exit the loop if no message is received or connection is closed
-            MESSAGES_RECEIVED.inc()
+            metrics.MESSAGES_RECEIVED.inc()
 
             # Process the message
             parsed_data, type = parse_hl7_message(message)
+            if parsed_data is None or type is None:
+                print("Parsing failed, skipping this message.")
+                continue
+
             # extract mrn for the user
             mrn = extract_mrn(parsed_data)
 
@@ -138,6 +134,7 @@ def main():
                 historical_data = update_patient_data(mrn, parsed_data, historical_data, type=type)
             # if ORU (Observation Result), extract all pass history, aggregate and make prediction
             else:
+                metrics.BLOOD_TEST_RECEIVED.inc()
                 patient_history = get_patient_history(historical_data, mrn)
 
                 combined_data = aggregate_data(parsed_data, patient_history)
@@ -146,15 +143,15 @@ def main():
                 prediction_rate = prediction_rate_dic["rate"]
 
                 for column in mean_last_hour_test_data.index:
-                    MEAN_INPUT.labels(column).set(mean_last_hour_test_data[column])
-                PREDICTION_RATE.set(prediction_rate)
-                PREDICTION_LATENCY.set(prediction_latency)
+                    metrics.MEAN_INPUT.labels(column).set(mean_last_hour_test_data[column])
+                metrics.PREDICTION_RATE.set(prediction_rate)
+                metrics.PREDICTION_LATENCY.set(prediction_latency)
     
                 # if detect aki
                 if prediction:
                     print("page for mrn: " + str(mrn))
-                    send_pager_message(mrn, pager)
-                    PAGES_SENT.inc()
+                    send_pager_message(mrn, prediction_date, pager)
+                    metrics.PAGES_SENT.inc()
                     recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
             ack_message()
@@ -164,7 +161,7 @@ def main():
     
             # Calculate the latency
             overall_latency = end_time - start_time
-            OVERALL_LATENCY.set(overall_latency)
+            metrics.OVERALL_LATENCY.set(overall_latency)
 
     finally:
         if args.local:

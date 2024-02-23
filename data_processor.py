@@ -27,7 +27,7 @@ def load_and_process_history(file_path):
             row = [item for item in row if item]
 
             # Adding the first columns (mrn) back, and adding the second and the third columns as None
-            processed_row = row[:1] + [None] + [None] + row[1:] + [None] * (55 - len(row))
+            processed_row = row[:1] + [None] + [None] + row[1:] + [None] * (101 - len(row))
 
             historical_data.append(processed_row)
 
@@ -35,7 +35,7 @@ def load_and_process_history(file_path):
     processed_column_names = ['mrn', 'age', 'sex']
 
     # Fixing number of results to be 27
-    for i in range(27):
+    for i in range(50):
         processed_column_names.append(f'creatinine_date_{i}')
         processed_column_names.append(f'creatinine_result_{i}')
 

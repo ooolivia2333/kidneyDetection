@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aki-detection-service
+  namespace: trinity
+spec:
+  selector:
+    app: aki-detection
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
