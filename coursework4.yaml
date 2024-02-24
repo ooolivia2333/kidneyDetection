@@ -39,6 +39,9 @@ spec:
           value: trinity-simulator.coursework5:8441
         - name: PYTHONUNBUFFERED
           value: "1"
+        ports:
+        - name: http
+          containerPort: 8000
         volumeMounts:
           - mountPath: "/hospital-history"
             name: hospital-history
