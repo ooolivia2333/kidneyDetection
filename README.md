@@ -66,3 +66,13 @@ To forward Prometheus to local port (then access via http://localhost:8000) or s
 ```bash
 kubectl -n trinity port-forward {port_name} 8000:8000
 ```
+
+To deploy alerting rules, first apply the alert rule yaml
+```bash
+kubectl apply -f alerting_rules.yaml
+```
+Then restart prometheus server to fetch the newest alerting_rules
+```bash
+kubectl delete deployment prometheus -n trinity
+kubectl apply -f prometheus-deployment.yaml
+```
