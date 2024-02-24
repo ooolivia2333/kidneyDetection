@@ -9,10 +9,10 @@ data:
     - name: aki-alerts
       rules:
       - alert: PageFailed
-        expr: increase(pages_failed_total[1m]) > 1
+        expr: increase(pages_failed_total[1m]) > 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "page failed"
-          description: "Page failed (> 1 in the last minute)."
+          description: "Page failed (> 0 in the last minute)."

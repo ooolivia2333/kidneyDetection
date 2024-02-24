@@ -60,7 +60,7 @@ def parse_hl7_message(message):
 
     message_type = msh_match.group(2)
     extracted_info = {'date_and_time': msh_match.group(1), 'message_type': message_type}
-    message_type_str = 'ADT' if 'ADT' in message_type else'ORU'
+    message_type_str = 'ADT' if 'ADT' in message_type else 'ORU'
 
     if message_type in ['ADT^A01', 'ADT^A03']:
         extracted_info.update(
