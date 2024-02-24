@@ -9,10 +9,18 @@ data:
     - name: aki-alerts
       rules:
       - alert: PageFailed
-        expr: increase(pages_failed_total[1m]) > 0
+        expr: increase(pages_sent_failed_total[1m]) > 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "page failed"
           description: "Page failed (> 0 in the last minute)."
+      - alert: ParseFailed
+        expr: increase(messages_parsed_failed_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Parse failed"
+          description: "Parse failed (> 0 in the last minute)."
