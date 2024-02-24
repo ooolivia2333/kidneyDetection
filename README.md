@@ -1,34 +1,68 @@
+
 # SW4ML-cw3
 
-## run docker locally
-assume the simulator will run outside of docker
-* python simulator.py
+## Run Docker Locally
+Assume the simulator will run outside of Docker:
+```bash
+python simulator.py
+```
 
-build docker image
-* docker build -t cw3 .
+Build Docker image:
+```bash
+docker build -t cw3 .
+```
 
-set docker environment variables for running
-* docker run -e MLLP_ADDRESS=host.docker.internal:8440 -e PAGER_ADDRESS=host.docker.internal:8441 -p 8000:8000 cw3
+Set Docker environment variables for running:
+```bash
+docker run -e MLLP_ADDRESS=host.docker.internal:8440 -e PAGER_ADDRESS=host.docker.internal:8441 -p 8000:8000 cw3
+```
 
-* dockerfile: --local=True
+* Dockerfile: `--local=True`
 
-view localhost:8000 for metrics
+View `localhost:8000` for metrics.
 
 ## Kubernetes
-* az loign
-* az acr login --name imperialswemlsspring2024
-* docker build --platform=linux/x86-64 -t imperialswemlsspring2024.azurecr.io/coursework4-trinity .
-* docker push imperialswemlsspring2024.azurecr.io/coursework4-trinity
-* kubectl delete deployment aki-detection -n trinity
-* kubectl apply -f coursework4.yaml
+Login to Azure:
+```bash
+az login
+```
 
-To see logs
-* kubectl logs --namespace=trinity -l app=aki-detection -n trinity
+Login to Azure Container Registry (ACR):
+```bash
+az acr login --name imperialswemlsspring2024
+```
 
-To check port
-* kubectl get pods -n trinity
+Build Docker image for Linux x86-64 platform:
+```bash
+docker build --platform=linux/x86-64 -t imperialswemlsspring2024.azurecr.io/coursework4-trinity .
+```
 
-To forward prometheus to local port (then access via http://localhost:8000)
-or simply access http://172.166.8.31:9090
-* kubectl -n trinity port-forward {port_name} 8000:8000
+Push Docker image to ACR:
+```bash
+docker push imperialswemlsspring2024.azurecr.io/coursework4-trinity
+```
 
+Delete existing Kubernetes deployment:
+```bash
+kubectl delete deployment aki-detection -n trinity
+```
+
+Apply Kubernetes configuration:
+```bash
+kubectl apply -f coursework4.yaml
+```
+
+To see logs:
+```bash
+kubectl logs --namespace=trinity -l app=aki-detection -n trinity
+```
+
+To check port:
+```bash
+kubectl get pods -n trinity
+```
+
+To forward Prometheus to local port (then access via http://localhost:8000) or simply access http://172.166.8.31:9090:
+```bash
+kubectl -n trinity port-forward {port_name} 8000:8000
+```

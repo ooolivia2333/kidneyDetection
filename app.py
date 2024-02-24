@@ -16,7 +16,6 @@ from prometheus_client import start_http_server
 import metrics
 
 historical_data = None
-
 def saving_csv_for_shutdown(signum, frame):
     global historical_data
     print("Received SIGTERM. saving data to csv file")
