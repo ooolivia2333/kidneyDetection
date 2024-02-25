@@ -101,8 +101,13 @@ def main():
     ]
     last_hour_test_data = pd.DataFrame(columns = new_column_order)
 
-    # start listener for mllp messages
-    start_listener(mllp)
+    # start listener for mllp messages. If error thrown, log error, register failure and return to prevent further errors.
+    try:
+        start_listener(mllp)
+    except Exception as e:
+        print('Error in starting MLLP listener:', e)
+        metrics.START_MLLP_LISTENER_FAILURE.inc()
+        return
 
     try:
         # Register the SIGTERM signal handler
@@ -154,6 +159,7 @@ def main():
                     recorded_predictions.append({'mrn': mrn, 'prediction_date': prediction_date})
 
             ack_message()
+            metrics.MESSAGES_ACKNOWLEDGED.inc()
 
             # End the timer
             end_time = time.time()
@@ -172,6 +178,7 @@ def main():
 
         print("Cleaning up resources...")
         close_connection()
+        metrics.CONNECTION_CLOSURE.inc()
 
 if __name__ == "__main__":
     main()
