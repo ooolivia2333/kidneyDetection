@@ -90,14 +90,12 @@ def main():
     # Initialize the prediction rate
     prediction_rate_dic = {"positive": 0, "negative": 0, "rate": 0.0}
 
+    # Initialize the median last hour test data
+    median_last_hour_test_data = 0
+
     # Initialize the last hour test data
     new_column_order = [
-        'age', 'sex', 
-        'creatinine_result_0', 'creatinine_date_0', 
-        'creatinine_result_1', 'creatinine_date_1', 
-        'creatinine_result_2', 'creatinine_date_2',
-        'creatinine_result_3', 'creatinine_date_3',
-        'creatinine_result_4', 'creatinine_date_4',
+        'new_creatinine_result',
         'prediction_time'
     ]
     last_hour_test_data = pd.DataFrame(columns = new_column_order)
@@ -142,13 +140,12 @@ def main():
                 metrics.BLOOD_TEST_RECEIVED.inc()
                 patient_history = get_patient_history(historical_data, mrn)
 
-                combined_data = aggregate_data(parsed_data, patient_history)
+                combined_data, last_hour_test_data, median_last_hour_test_data = aggregate_data(parsed_data, patient_history, last_hour_test_data)
+                metrics.MEDIAN_INPUT.set(median_last_hour_test_data)
                 historical_data = update_patient_data(mrn, combined_data, historical_data, type=type)
-                prediction, prediction_date, prediction_latency, prediction_rate_dic, last_hour_test_data, mean_last_hour_test_data = predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data)
+                prediction, prediction_date, prediction_latency, prediction_rate_dic = predict_aki(model, combined_data, prediction_rate_dic)
                 prediction_rate = prediction_rate_dic["rate"]
 
-                for column in mean_last_hour_test_data.index:
-                    metrics.MEAN_INPUT.labels(column).set(mean_last_hour_test_data[column])
                 metrics.PREDICTION_RATE.set(prediction_rate)
                 metrics.PREDICTION_LATENCY.set(prediction_latency)
     

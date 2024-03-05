@@ -5,7 +5,6 @@ import time
 from pandas import to_datetime
 from datetime import datetime
 
-
 def load_model(model_path):
     '''
     Description:
@@ -19,19 +18,29 @@ def load_model(model_path):
     model.load_model(model_path)
     return model
 
-def aggregate_data(new_data, patient_history):
+def aggregate_data(new_data, patient_history, last_hour_test_data):
     '''
     Description:
         This function appends the new test date and result to the last non-NaN historical data
     input:
         new_data: DIC
         patient_history: pd DataFrame
+        last_hour_test_data: pd DataFrame
     output:
         combined_data: pd DataFrame
+        last_hour_test_data: pd DataFrame
+        median_last_hour_test_data: pd DataFrame
     '''
     # get the new blood test date and result
     test_time = to_datetime(new_data['test_time'], format='%Y%m%d%H%M%S')
     test_result = float(new_data['test_result'])
+
+    # calculate the median of the test result in last an hour
+    current_time = datetime.now()
+    new_test_data = [test_result] + [current_time]
+    last_hour_test_data.loc[len(last_hour_test_data)] = new_test_data
+    last_hour_test_data = last_hour_test_data[last_hour_test_data['prediction_time'] > (current_time - pd.Timedelta(hours=1))]
+    median_last_hour_test_data = last_hour_test_data.iloc[:, :1].median().values[0]
 
     # Add the new test result to the last non-NaN historical data
     creatinine_pairs_count = (len(patient_history.columns) - 2) // 2
@@ -54,35 +63,21 @@ def aggregate_data(new_data, patient_history):
         patient_history[new_result_col_name] = test_result
 
     combined_data = patient_history
-    return combined_data
+    return combined_data, last_hour_test_data, median_last_hour_test_data
 
-def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
+def reverse_data(combined_data):
     '''
-    Description:    
-        Predict acute kidney injury (AKI) using an XGBoost model based on the provided patient data.
+    Description:
+        Reverse data to get the most recent 10 test results
     input:
-        model: XGBoost model
         combined_data: pd DataFrame
-        prediction_rate_dic: DIC
-        last_hour_test_data: pd DataFrame
     output:
-        prediction: np array
-        prediction_date: datetime
-        prediction_latency: FLOAT
-        prediction_rate_dic: DIC
-        last_hour_test_data: pd DataFrame
-        mean_last_hour_test_data: pd DataFrame
+        reversed_data: pd DataFrame
     '''
-    # Start the timer
-    start_time = time.time()
-
     # Find the first NaN index to reverse the data
     first_nan_index = combined_data.iloc[0, 2:].isna().argmax() + 2 
     if first_nan_index == 2:
         first_nan_index = combined_data.shape[1]
-
-    # Extract 'age' and 'sex' data
-    age_sex_data = combined_data.iloc[:, :2]
 
     # Reverse the data
     data_to_reverse = combined_data.iloc[0, 2:first_nan_index].dropna()
@@ -95,6 +90,20 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     else:
         reversed_data = reversed_data.iloc[:10]
     reversed_data = reversed_data.reset_index(drop=True)
+    return reversed_data
+
+def create_test_data(combined_data, reversed_data):
+    '''
+    Description:
+        Create the test data for the prediction
+    input:
+        combined_data: pd DataFrame
+        reversed_data: pd DataFrame
+    output:
+        test_data: pd DataFrame
+    '''
+    # Extract 'age' and 'sex' data
+    age_sex_data = combined_data.iloc[:, :2]
 
     # Create a new DataFrame with the reversed data and the original
     new_column_order = [
@@ -120,12 +129,38 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     combined_data_list = age_sex_data + reversed_data
     test_data.loc[len(test_data)] = combined_data_list
     
+    
     # Convert 'creatinine_result' columns to float and 'creatinine_date' columns to datetime
     for i in range(5):
         creatinine_result_col = f'creatinine_result_{i}'
         creatinine_date_col = f'creatinine_date_{i}'
         test_data[creatinine_result_col] = pd.to_numeric(test_data[creatinine_result_col], errors='coerce')
         test_data[creatinine_date_col] = pd.to_datetime(test_data[creatinine_date_col], errors='coerce')
+    return test_data
+
+def predict_aki(model, combined_data, prediction_rate_dic):
+    '''
+    Description:    
+        Predict acute kidney injury (AKI) using an XGBoost model based on the provided patient data.
+    input:
+        model: XGBoost model
+        combined_data: pd DataFrame
+        prediction_rate_dic: DIC
+    output:
+        prediction: np array
+        prediction_date: datetime
+        prediction_latency: FLOAT
+        prediction_rate_dic: DIC
+    '''
+    # Start the timer
+    start_time = time.time()
+
+
+    # Reverse the data
+    reversed_data = reverse_data(combined_data)
+
+    # Create the test data
+    test_data = create_test_data(combined_data, reversed_data)
 
     last_test_date_column = 'creatinine_date_0'  # Adjust based on your actual data structure
     prediction_date = test_data[last_test_date_column].iloc[-1]  # Get the last (most recent) test date
@@ -149,13 +184,6 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
 
     # End the timer
     end_time = time.time()
-
-    # calculate the median of the test_data_pd in last an hour
-    current_time = datetime.now()
-    new_test_data = test_data.iloc[0].values.tolist() + [current_time]
-    last_hour_test_data.loc[len(last_hour_test_data)] = new_test_data
-    last_hour_test_data = last_hour_test_data[last_hour_test_data['prediction_time'] > (current_time - pd.Timedelta(hours=1))]
-    mean_last_hour_test_data = last_hour_test_data.iloc[:, :12].mean()
     
     # Calculate the prediction latency
     prediction_latency = end_time - start_time
@@ -167,4 +195,5 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
         prediction_rate_dic["negative"] += 1
     prediction_rate_dic["rate"] = prediction_rate_dic["positive"] / (prediction_rate_dic["positive"] + prediction_rate_dic["negative"])
         
-    return prediction, prediction_date, prediction_latency, prediction_rate_dic, last_hour_test_data, mean_last_hour_test_data
+    return prediction, prediction_date, prediction_latency, prediction_rate_dic
+
