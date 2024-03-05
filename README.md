@@ -49,7 +49,7 @@ kubectl delete deployment aki-detection -n trinity
 
 Apply Kubernetes configuration:
 ```bash
-kubectl apply -f coursework4.yaml
+kubectl apply -f deployment.yaml
 ```
 
 To see logs:
@@ -69,7 +69,7 @@ kubectl -n trinity port-forward {port_name} 8000:8000
 
 To deploy alerting rules, first apply the alert rule yaml
 ```bash
-kubectl apply -f alerting_rules.yaml
+kubectl apply -f alerting-rules.yaml
 ```
 Then restart prometheus server to fetch the newest alerting_rules
 ```bash
