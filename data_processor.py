@@ -12,21 +12,21 @@ def load_and_process_history(file_path):
         file_path: STRING
     output:
         processed_data: pd DataFrame with the following columns:
-        [mrn, age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_26, creatinine_result_26]
+        [mrn, age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_49, creatinine_result_49]
     '''
     # Read csv file
     with open(file_path, mode='r') as file:
         reader = csv.reader(file)
         historical_data = []
 
-        # Skip the first row
+        # Skip the header
         next(reader, None)
 
         for row in reader:
             # Remove empty values
             row = [item for item in row if item]
 
-            # Adding the first columns (mrn) back, and adding the second and the third columns as None
+            # Adding the first columns (mrn) back, and adding the second and the third columns as None to keep the same length
             processed_row = row[:1] + [None] + [None] + row[1:] + [None] * (101 - len(row))
 
             historical_data.append(processed_row)
@@ -34,14 +34,14 @@ def load_and_process_history(file_path):
     # fixed column names for the processed DataFrame
     processed_column_names = ['mrn', 'age', 'sex']
 
-    # Fixing number of results to be 27
+    # add the creatinine date and result columns to the column names
     for i in range(50):
         processed_column_names.append(f'creatinine_date_{i}')
         processed_column_names.append(f'creatinine_result_{i}')
 
     processed_df = pd.DataFrame(historical_data, columns=processed_column_names)
 
-    # convert None to np.nan
+    # convert None to np.nan for consistency
     processed_df = processed_df.fillna(np.nan)
 
     return processed_df
@@ -59,7 +59,7 @@ def update_patient_data(mrn, parsed_data, historical_data, type):
         type: STRING
     output:
         historical_data: pd DataFrame with the following columns:
-        [mrn, age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_26, creatinine_result_26]
+        [mrn, age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_49, creatinine_result_49]
     '''
     # check if the message is an ADT message
     if type == 'ADT':

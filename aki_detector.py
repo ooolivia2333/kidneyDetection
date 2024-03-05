@@ -4,8 +4,7 @@ import numpy as np
 import time
 from pandas import to_datetime
 from datetime import datetime
-from hl7_processor import parse_hl7_message, extract_mrn
-from data_processor import load_and_process_history, get_patient_history, update_patient_data
+
 
 def load_model(model_path):
     '''
@@ -77,7 +76,7 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     # Start the timer
     start_time = time.time()
 
-    # Find the first NaN index
+    # Find the first NaN index to reverse the data
     first_nan_index = combined_data.iloc[0, 2:].isna().argmax() + 2 
     if first_nan_index == 2:
         first_nan_index = combined_data.shape[1]
@@ -110,7 +109,8 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     sex = age_sex_data.iloc[0]['sex']
     age_sex_data = [age, sex]
 
-    # Convert the reversed data to a list and fill with NaNs if necessary
+    # Convert the reversed data to a list
+    # Use NaNs to fill the missing values, because the model expects uniform data structure(10 elements)
     if len(reversed_data) < 10:
         reversed_data = list(reversed_data) + [np.nan] * (10 - len(reversed_data)) 
     else:
@@ -157,7 +157,7 @@ def predict_aki(model, combined_data, prediction_rate_dic, last_hour_test_data):
     last_hour_test_data = last_hour_test_data[last_hour_test_data['prediction_time'] > (current_time - pd.Timedelta(hours=1))]
     mean_last_hour_test_data = last_hour_test_data.iloc[:, :12].mean()
     
-    # Calculate the latency
+    # Calculate the prediction latency
     prediction_latency = end_time - start_time
 
     # Update the prediction rate
