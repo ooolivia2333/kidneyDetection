@@ -6,9 +6,7 @@ def parse_hl7_message(message):
     Parses an HL7 message into a dictionary based on message type.
 
     Parameters:
-    - message_bytes: bytes, the HL7 message.
-    - messages_parsed_counter: Counter, Prometheus counter for successfully parsed messages.
-    - messages_parsed_failed_counter: Counter, Prometheus counter for failed parses.
+    - message: bytes, the HL7 message.
 
     Returns:
     - Tuple (extracted_info, message_type_str): Where extracted_info is a dictionary containing parsed data, and message_type_str is a string indicating the message type ("ADT" or "ORU").

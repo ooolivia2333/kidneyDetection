@@ -1,6 +1,6 @@
 from prometheus_client import Counter, Gauge
 
-# metrics
+# metrics for prometheus
 MESSAGES_RECEIVED = Counter('messages_received_total', 'Total HTTP Requests (count)')
 PAGES_SENT = Counter('pages_sent_total', 'Total Pages Sent (count)')
 PREDICTION_LATENCY = Gauge('prediction_latency', 'Prediction latency')

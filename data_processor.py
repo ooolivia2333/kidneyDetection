@@ -114,7 +114,7 @@ def get_patient_history(historical_data, mrn):
         mrn: STRING
     output:
         test_results: pd DataFrame with the following columns:
-        [age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_26, creatinine_result_26]
+        [age, sex, creatinine_date_0, creatinine_result_0, ..., creatinine_date_49, creatinine_result_49]
     '''
     # get the patient's data, add the new patient to the historical data if it does not exist
     if mrn not in historical_data['mrn'].values:
