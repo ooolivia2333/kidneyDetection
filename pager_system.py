@@ -8,7 +8,7 @@ def send_pager_message(mrn, prediction_date, url):
     input:
         mrn: String
         prediction_date: String : 2024-04-29 05:41:00
-        port: int
+        url: String
     '''
     try:
 

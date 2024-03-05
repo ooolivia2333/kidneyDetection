@@ -2,6 +2,8 @@
 # SW4ML-cw3
 
 ## Run Docker Locally
+* Dockerfile: `--local=True`
+
 Assume the simulator will run outside of Docker:
 ```bash
 python simulator.py
@@ -16,8 +18,6 @@ Set Docker environment variables for running:
 ```bash
 docker run -e MLLP_ADDRESS=host.docker.internal:8440 -e PAGER_ADDRESS=host.docker.internal:8441 -p 8000:8000 cw3
 ```
-
-* Dockerfile: `--local=True`
 
 View `localhost:8000` for metrics.
 
@@ -76,3 +76,11 @@ Then restart prometheus server to fetch the newest alerting_rules
 kubectl delete deployment prometheus -n trinity
 kubectl apply -f prometheus-deployment.yaml
 ```
+
+## Design Overview
+1. using pandas, numpy to read and preprocess patients' data, and maintain it in a pd.df. including >10000 patients, >100000 blood test data
+2. using XGBoost to build a decision tree model, to predict if a patient has AKI from his/her general info and historical blood test data. with >98% accuracy
+3. using socket to read real-time blood testdata from simulator, predict simultaneously, and page to the hospital with low latency.
+4. build docker image; write unit test, integration test, validation module; run and test automatically.
+5. pushed docker image to Azure Kubernetes. add recovery mechanisms (store and reload csv files)
+6. use prometheus and alertmanager to generate metrics, send alerts automatically. 

@@ -15,7 +15,9 @@ import time
 from prometheus_client import start_http_server
 import metrics
 
+# important global variable: for saving updating patients'data
 historical_data = None
+
 def saving_csv_for_shutdown(signum, frame):
     global historical_data
     print("Received SIGTERM. saving data to csv file")
@@ -34,7 +36,6 @@ def reload_csv_from_shutdown():
         return True
     else:
         return False
-
 
 def parse_url(url):
     if url.startswith('http://'):
