@@ -8,7 +8,7 @@ MLLP_CARRIAGE_RETURN = b'\x0d'  # Carriage return
 def start_listener(url):
     host_name, port = url.split(':')
     # Set up socket connection to listen for HL7 messages
-    global s  # Declare the socket as global to use it outside this function
+    global s
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = (host_name, int(port))
     s.connect(server_address)
@@ -22,20 +22,16 @@ def receive_message():
             print("Connection closed by the server.")
             s.close()  # Close the socket
             return None
-        # print data for testing purposes, should be deleted later
-        return data  # And return the data
+        return data
     except Exception as e:
-        # If an error occurs, print the error, close the socket, and return None
         print(f"An error occurred: {e}")
         s.close()  # Ensure the socket is closed to avoid resource leakage
         return None
 
 def ack_message():
     global s
-    # Generate current timestamp in the format YYYYMMDDHHMMSS
     current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    # Send acknowledgment back
     ack_message = (
             b'\x0b'  # MLLP start block
             + f"MSH|^~\\&|||||{current_timestamp}||ACK|||2.5\r".encode()  # MSH segment with current timestamp and version 2.5

@@ -34,9 +34,9 @@ spec:
         - "--history=/hospital-history/history.csv"
         env:
         - name: MLLP_ADDRESS
-          value: trinity-simulator.coursework5:8440
+          value: trinity-simulator.coursework6:8440
         - name: PAGER_ADDRESS
-          value: trinity-simulator.coursework5:8441
+          value: trinity-simulator.coursework6:8441
         - name: PYTHONUNBUFFERED
           value: "1"
         ports:
@@ -58,7 +58,7 @@ spec:
             cpu: "100m"  # Reduced CPU request
       initContainers:
       - name: copy-hospital-history
-        image: imperialswemlsspring2024.azurecr.io/coursework5-history
+        image: imperialswemlsspring2024.azurecr.io/coursework6-history
         volumeMounts:
           - mountPath: "/hospital-history"
             name: hospital-history
